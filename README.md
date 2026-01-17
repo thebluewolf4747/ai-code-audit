@@ -1,1 +1,1 @@
-# ai-code-audit
+# AI-Assisted Bug Detection & Code Trustworthiness Dashboard
