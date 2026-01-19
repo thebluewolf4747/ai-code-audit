@@ -55,6 +55,7 @@ What this project is able to do:
 - Severity tuning
 
 # The Process
+First, I created a GitHub Action skeleton using a YAML file.
 
 ## What I learned
 
