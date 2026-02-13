@@ -1,4 +1,4 @@
-import os
+import os, subprocess
 from ignores import *
 
 def run_scan():
@@ -30,7 +30,7 @@ def discover_source_files(path):
                 L.append(os.path.join(root, file))
     return L
 
-def run_pylint():
+def run_pylint(file_paths: list):
     """ - Execute pylint against the discovered files
         - Capture raw output
         - Return raw results
@@ -38,7 +38,19 @@ def run_pylint():
     # 1. Learn how to invoke CLI tools from Python
     # 2. Learn how to capture stdout/stderr
     # 3. Learn how to request machine-readable output from pylint
-    pass
+    if len(file_paths) > 0:
+        cmd_list = ["pylint", "--output-format=json"]
+        cmd_list.extend(file_paths)
+
+        result = subprocess.run(cmd_list, capture_output=True, text=True, check=False)
+
+        return result.returncode, result.stderr, result.stdout
+
+    else:
+        print("File list is empty. Pylint not executed.")
+    
+    return
+
 
 def run_bandit():
     """ - Run Bandit for security scanning
