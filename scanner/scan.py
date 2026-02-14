@@ -1,4 +1,6 @@
-import os, subprocess
+import os
+import subprocess
+import json
 from ignores import *
 
 def run_scan():
@@ -9,7 +11,6 @@ def run_scan():
     # 1. Start with a checklist of steps
     # 2. Call functions in sequence
     # 3. Combine outputs
-    pass
 
 def discover_source_files(path):
     """ - Traverse the repository
@@ -24,7 +25,7 @@ def discover_source_files(path):
             d for d in dirs
             if d not in ignored_dirs
         ]
-                
+
         for file in files:
             if not any(file.endswith(ext) for ext in ignored_ext):
                 L.append(os.path.join(root, file))
@@ -46,10 +47,9 @@ def run_pylint(file_paths: list):
 
         return result.returncode, result.stderr, result.stdout
 
-    else:
-        print("File list is empty. Pylint not executed.")
-    
-    return
+    print("File list is empty. Pylint not executed.")
+
+    return None, None, None
 
 
 def run_bandit():
@@ -60,7 +60,6 @@ def run_bandit():
     # 1. Learn Bandit usage
     # 2. Decide file-level vs directory-level scanning
     # 3. Capture results programmatically
-    pass
 
 def run_radon():
     """ - Run Radon for code complexity analysis
@@ -70,28 +69,41 @@ def run_radon():
     # 1. Learn Radon's output modes
     # 2. Understand complexity metrics conceptually
     # 3. Capture output for later parsing
-    pass
 
-def normalise_pylint_output():
+def normalise_pylint_output(stdout: str):
     """ - Convert pylint results into your internal issue format """
     # 1. Study pylint's output schema
     # 2. Map categories to your severity scale
     # 3. Extract file, line, message, severity
-    pass
+    try:
+        parsed_output = json.loads(stdout)
+
+    except json.JSONDecodeError:
+        print("JSON Error: Cannot decode properly.")
+
+    else:
+        print("CodeTrust Issue Scanner:")
+        for issue in parsed_output:
+            print(f"Issue Type: {issue['type']}")
+            print(f"Path: {issue['path']}")
+            print(f"Line No.: {issue['line']}")
+            print(f"Message: {issue['message']}")
+            print()
+
+    finally:
+        pass
 
 def normalise_bandit_output():
     """ - Convert Bandit results into security issues """
     # 1. Study Bandit's output schema
     # 2. Map severity to your model
     # 3. Extract CWE references if useful
-    pass
 
 def normalise_radon_output():
     """ - Convert Radon results into complexity issues/metrics """
     # 1. Decide what counts as a "problem"
     # 2. Map complexity scores to severities
     # 3. Attach metrics to files
-    pass
 
 def aggregate_issues():
     """ - Merge all normalised issues into a single collection
@@ -101,7 +113,6 @@ def aggregate_issues():
     # 1. Standardise issue objects
     # 2. Combine lists
     # 3. Add metadata if needed
-    pass
 
 def build_scan_report():
     """ - Wrap issues in a report structure
@@ -113,18 +124,17 @@ def build_scan_report():
     # 1. Define final JSON schema
     # 2. Attach metadata
     # 3. Validate structure
-    pass
 
 def export_report():
     """ - Output the final report """
     # 1. Learn Python JSON serialisation
     # 2. Decide output destination
     # 3. Ensure reproducibility
-    pass
 
 def validate_environment():
     pass
 
 if __name__ == "__main__":
-    pass
-
+    files = discover_source_files("C:/Users/Rayya/OneDrive/Documents/VS Code/CodeTrust/")
+    exit_code, stderr, stdout = run_pylint(files)
+    PYLINT_ISSUES = normalise_pylint_output(stdout) if stdout is not None else None
