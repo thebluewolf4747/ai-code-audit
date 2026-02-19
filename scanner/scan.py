@@ -82,16 +82,18 @@ def normalise_pylint_output(stdout: str):
         print("JSON Error: Cannot decode properly.")
 
     else:
-        print("CodeTrust Issue Scanner:")
-        for issue in parsed_output:
-            print(f"Issue Type: {issue['type']}")
-            print(f"Path: {issue['path']}")
-            print(f"Line No.: {issue['line']}")
-            print(f"Message: {issue['message']}")
-            print()
+        issues = []
 
-    finally:
-        pass
+        for issue in parsed_output:
+            internal_issue = {
+                "tool": "pylint",
+                "file": issue["path"],
+                "line": issue["line"],
+                "message": issue["message"],
+            }
+            issues.append(internal_issue)
+
+        return issues
 
 def normalise_bandit_output():
     """ - Convert Bandit results into security issues """
