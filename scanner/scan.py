@@ -31,7 +31,7 @@ def discover_source_files(path):
                 L.append(os.path.join(root, file))
     return L
 
-def run_pylint(file_paths: list):
+def run_pylint(file_paths: list) -> tuple:
     """ - Execute pylint against the discovered files
         - Capture raw output
         - Return raw results
@@ -84,12 +84,22 @@ def normalise_pylint_output(stdout: str):
     else:
         issues = []
 
+        severity_mapping = {
+            "convention": "low",
+            "refactor": "low",
+            "warning": "medium",
+            "error": "high",
+            "fatal": "critical"
+        }
+
         for issue in parsed_output:
             internal_issue = {
                 "tool": "pylint",
                 "file": issue["path"],
                 "line": issue["line"],
                 "message": issue["message"],
+                "severity": severity_mapping.get(issue.get("type"), "medium"),
+                "code": issue.get("message-id")
             }
             issues.append(internal_issue)
 
@@ -139,4 +149,5 @@ def validate_environment():
 if __name__ == "__main__":
     files = discover_source_files("C:/Users/Rayya/OneDrive/Documents/VS Code/CodeTrust/")
     exit_code, stderr, stdout = run_pylint(files)
-    PYLINT_ISSUES = normalise_pylint_output(stdout) if stdout is not None else None
+    issues = normalise_pylint_output(stdout)
+    print(issues)
