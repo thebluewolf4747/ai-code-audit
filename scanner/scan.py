@@ -3,7 +3,7 @@ import subprocess
 import json
 from ignores import *
 
-def run_scan():
+def run_scan(target_path: str):
     """ - Orchestrates the entire scanning process.
         - Calls every other function in the correct order.
         - Returns the final aggregated result
@@ -11,6 +11,24 @@ def run_scan():
     # 1. Start with a checklist of steps
     # 2. Call functions in sequence
     # 3. Combine outputs
+    files = discover_source_files(target_path)
+    all_issues = []
+
+    rc, stderr, stdout = run_pylint(files)
+    if stdout:
+        pylint_issues = normalise_pylint_output(stdout)
+        all_issues.extend(pylint_issues)
+
+    rc, stderr, stdout = run_bandit(target_path)
+    if stdout:
+        bandit_issues = normalise_bandit_output(stdout)
+        all_issues.extend(bandit_issues)
+
+    report = build_scan_report(all_issues)
+
+    exit_code = determine_exit_code(all_issues)
+
+    return report, exit_code
 
 def discover_source_files(path):
     """ - Traverse the repository
@@ -52,7 +70,7 @@ def run_pylint(file_paths: list) -> tuple:
     return None, None, None
 
 
-def run_bandit():
+def run_bandit(target_path: str) -> tuple:
     """ - Run Bandit for security scanning
         - Capture raw output
         - Return raw results
@@ -60,6 +78,23 @@ def run_bandit():
     # 1. Learn Bandit usage
     # 2. Decide file-level vs directory-level scanning
     # 3. Capture results programmatically
+
+    cmd_list = [
+        "bandit",
+        "-r",
+        target_path,
+        "-f",
+        "json"
+    ]
+
+    result = subprocess.run(
+        cmd_list,
+        capture_output=True,
+        text=True,
+        check=False
+    )
+
+    return result.returncode, result.stderr, result.stdout
 
 def run_radon():
     """ - Run Radon for code complexity analysis
@@ -106,11 +141,35 @@ def normalise_pylint_output(stdout: str):
 
         return issues
 
-def normalise_bandit_output():
+def normalise_bandit_output(stdout: str):
     """ - Convert Bandit results into security issues """
     # 1. Study Bandit's output schema
     # 2. Map severity to your model
     # 3. Extract CWE references if useful
+
+    try:
+        parsed_output = json.loads(stdout)
+        results = parsed_output.get("results", [])
+
+    except json.JSONDecodeError:
+        print("JSON Error: Cannot decode properly")
+        return []
+    
+    else:
+        issues = []
+
+        for item in results:
+            internal_issue = {
+                "tool": "bandit",
+                "file": item["filename"],
+                "line": item["line_number"],
+                "message": item["issue_text"],
+                "severity": item.get("issue_severity", "MEDIUM").lower(),
+                "code": item["test_id"]
+            }
+            issues.append(internal_issue)
+        
+        return issues
 
 def normalise_radon_output():
     """ - Convert Radon results into complexity issues/metrics """
@@ -148,7 +207,8 @@ def build_scan_report(issues):
     }
 
     for issue in issues:
-        summary[issue["severity"]] += 1
+        if issue["severity"] in summary:
+            summary[issue["severity"]] += 1
     
     return summary
 
@@ -169,14 +229,6 @@ def validate_environment():
     pass
 
 if __name__ == "__main__":
-    files = discover_source_files("C:/Users/Rayya/OneDrive/Documents/VS Code/CodeTrust/")
-    exit_code, stderr, stdout = run_pylint(files)
-    if stdout:
-        issues = normalise_pylint_output(stdout)
-
-    else:
-        issues = []
-
-    print(issues)
-    print(build_scan_report(issues))
-    print(determine_exit_code(issues))
+    report, exit_code = run_scan("C:/Users/Rayya/OneDrive/Documents/VS Code/CodeTrust/")
+    print(report)
+    exit(exit_code)
