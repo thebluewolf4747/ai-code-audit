@@ -80,6 +80,7 @@ def normalise_pylint_output(stdout: str):
 
     except json.JSONDecodeError:
         print("JSON Error: Cannot decode properly.")
+        return []
 
     else:
         issues = []
@@ -117,16 +118,18 @@ def normalise_radon_output():
     # 2. Map complexity scores to severities
     # 3. Attach metrics to files
 
-def aggregate_issues():
+def aggregate_issues(*issue_lists):
     """ - Merge all normalised issues into a single collection
         - Ensure consistent structure
         - Handle duplicates
     """
-    # 1. Standardise issue objects
-    # 2. Combine lists
-    # 3. Add metadata if needed
+    all_issues = []
+    for issue_list in issue_lists:
+        if issue_list:
+            all_issues.extend(issue_list)
+    return all_issues
 
-def build_scan_report():
+def build_scan_report(issues):
     """ - Wrap issues in a report structure
         - Add scan metadata
             - Timestamp
@@ -137,6 +140,25 @@ def build_scan_report():
     # 2. Attach metadata
     # 3. Validate structure
 
+    summary = {
+        "low": 0,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    }
+
+    for issue in issues:
+        summary[issue["severity"]] += 1
+    
+    return summary
+
+
+def determine_exit_code(issues):
+    for issue in issues:
+        if issue["severity"] in ["high", "critical"]:
+            return 1
+    return 0
+    
 def export_report():
     """ - Output the final report """
     # 1. Learn Python JSON serialisation
@@ -149,5 +171,12 @@ def validate_environment():
 if __name__ == "__main__":
     files = discover_source_files("C:/Users/Rayya/OneDrive/Documents/VS Code/CodeTrust/")
     exit_code, stderr, stdout = run_pylint(files)
-    issues = normalise_pylint_output(stdout)
+    if stdout:
+        issues = normalise_pylint_output(stdout)
+
+    else:
+        issues = []
+
     print(issues)
+    print(build_scan_report(issues))
+    print(determine_exit_code(issues))
